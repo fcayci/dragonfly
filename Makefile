@@ -10,7 +10,7 @@ endif
 
 # C specific options here (added to USE_OPT).
 ifeq ($(USE_COPT),)
-  USE_COPT = 
+  USE_COPT =
 endif
 
 # C++ specific options here (added to USE_OPT).
@@ -25,7 +25,7 @@ endif
 
 # Linker extra options here.
 ifeq ($(USE_LDOPT),)
-  USE_LDOPT = 
+  USE_LDOPT =
 endif
 
 # Enable this if you want link time optimizations (LTO)
@@ -68,6 +68,7 @@ endif
 PROJECT = ch
 
 # Imported source files and paths
+CHIBIOS=/Users/fcayci/dev/embedded/os/chibios_
 include board/board.mk
 include drivers/drivers.mk
 include $(CHIBIOS)/os/hal/platforms/STM32F4xx/platform.mk
@@ -212,3 +213,18 @@ ULIBS =
 
 RULESPATH = $(CHIBIOS)/os/ports/GCC/ARMCMx
 include $(RULESPATH)/rules.mk
+
+MKFW	 = bootloader/px_mkfw.py
+UPLOADER = bootloader/px_uploader.py
+SERIAL_PORT = /dev/tty.usbmodem*
+
+%.px4: %.bin
+	python -u $(MKFW) --prototype bootloader/dragonfly.prototype \
+		--image $< > $@
+
+burnpx: $(BUILDDIR)/$(PROJECT).px4 px4upload
+
+px4upload: $(BUILDDIR)/$(PROJECT).px4
+	python -u $(UPLOADER) --port $(SERIAL_PORT) $(BUILDDIR)/$(PROJECT).px4
+
+.PHONY: burnpx px4upload

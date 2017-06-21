@@ -2,3 +2,4 @@
 .dep/
 .project
 build/
+*.o

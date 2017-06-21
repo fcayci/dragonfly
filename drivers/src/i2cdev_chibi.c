@@ -19,8 +19,8 @@
 
 /* ChibiOS I2Cdev Main I2C device class conversion 2/5/2013 by Jan Schlemminger - C conversion, ChibiOS compliance
  * First release. I just tested byte-based reading so this should be considered HIGHLY EXPERIMENTAL!!!
- * 
- * 
+ *
+ *
  * Feel free to test and report bugs. Updates at https://github.com/jevermeister/MPU6050-ChibiOS
 */
 
@@ -171,14 +171,14 @@ int8_t I2CdevreadBytes(uint8_t devAddr, uint8_t regAddr, uint8_t length, uint8_t
 	//uint8_t mpu_txbuf[1], mpu_rxbuf[I2CDEV_BUFFER_LENGTH], i;
 	msg_t rdymsg;
 	if(length > I2CDEV_BUFFER_LENGTH) {
-		chprintf((BaseChannel *)&SD1,"ERROR readBytes: length > I2CDEV BUFFERLENGTH\n");
+		DEBUG_PRINT("ERROR readBytes: length > I2CDEV BUFFERLENGTH\n");
 		return FALSE;
 	}
 	i2cAcquireBus(&I2C_MPU);
 	rdymsg = i2cMasterTransmitTimeout(&I2C_MPU, devAddr, &regAddr, 1, data, length, MS2ST(timeout));
 	i2cReleaseBus(&I2C_MPU);
 	if(rdymsg == RDY_TIMEOUT || rdymsg == RDY_RESET) {
-		chprintf((BaseChannel *)&SD1,"I2C ERROR: %d\n\r", i2cGetErrors(&I2CD1));
+        DEBUG_PRINT(i2cGetErrors(&I2CD1));
 		return FALSE;
 	}
 	return TRUE;
@@ -331,12 +331,12 @@ bool_t I2CdevwriteBytes(uint8_t devAddr, uint8_t regAddr, uint8_t length, uint8_
 	uint8_t mpu_txbuf[I2CDEV_BUFFER_LENGTH], mpu_rxbuf[1];
 	msg_t rdymsg;
 	if((length + 1)> I2CDEV_BUFFER_LENGTH) {
-		chprintf((BaseChannel *)&SD1,"ERROR readBytes: length + 1 > I2CDEV BUFFERLENGTH\n");
+		DEBUG_PRINT("ERROR readBytes: length + 1 > I2CDEV BUFFERLENGTH\n");
 		return FALSE;
 	}
 	mpu_txbuf[0] = regAddr;
 	memcpy(mpu_txbuf + sizeof(uint8_t), data, sizeof(uint8_t) * length);
-	
+
 	i2cAcquireBus(&I2C_MPU);
 	rdymsg = i2cMasterTransmit(&I2C_MPU, devAddr, mpu_txbuf, length + 1, mpu_rxbuf, 0);
 	i2cReleaseBus(&I2C_MPU);
@@ -360,10 +360,12 @@ bool_t I2CdevwriteWords(uint8_t devAddr, uint8_t regAddr, uint8_t length, uint16
 		return FALSE;
 	}
 	mpu_txbuf[0] = regAddr;
-	for(i=1;i<((length * 2) + 1);i += 2) {
-		mpu_txbuf[i] = (data[i] >> 8) & 0xff;
-		mpu_txbuf[i+1] = data[i] & 0xff;
+	for(i=0;i<(length*2); i += 2)
+    {
+		mpu_txbuf[i+1] = (data[i] >> 8) & 0xff;
+		mpu_txbuf[i+2] = data[i] & 0xff;
 	}
+
 	i2cAcquireBus(&I2C_MPU);
 	rdymsg = i2cMasterTransmit(&I2C_MPU, devAddr, mpu_txbuf, (length * 2) + 1, mpu_rxbuf, 0);
 	i2cReleaseBus(&I2C_MPU);

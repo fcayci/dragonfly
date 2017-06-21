@@ -49,11 +49,11 @@ THE SOFTWARE.
 #include <string.h>
 
 /* Global variables, will see how to get rid of them
-*	     
+*
 */
 uint8_t MPUdevAddr;
 uint8_t MPUbuffer[14];
-			
+
 uint16_t MPUfifoCount;     	// count of all bytes currently in FIFO
 uint8_t  MPUfifoBuffer[64];	// FIFO storage buffer
 
@@ -883,7 +883,7 @@ void MPUsetMasterClockSpeed(uint8_t speed) {
  * operation, and if it is cleared, then it's a write operation. The remaining
  * bits (6-0) are the 7-bit device address of the slave device.
  *
- * In read mode, the result of the read is placed in the lowest available 
+ * In read mode, the result of the read is placed in the lowest available
  * EXT_SENS_DATA register. For further information regarding the allocation of
  * read results, please refer to the EXT_SENS_DATA register description
  * (Registers 73 - 96).
@@ -2972,7 +2972,7 @@ void MPUreadMemoryBlock(uint8_t *data, uint16_t dataSize, uint8_t bank, uint8_t 
 
         // read the chunk of data as specified
         I2CdevreadBytes(MPUdevAddr, MPU6050_RA_MEM_R_W, chunkSize, data + i, I2CDEV_DEFAULT_READ_TIMEOUT);
-        
+
         // increase byte index by [chunkSize]
         i += chunkSize;
 
@@ -3004,7 +3004,7 @@ bool_t MPUwriteMemoryBlock(const uint8_t *data, uint16_t dataSize, uint8_t bank,
 
         // make sure this chunk doesn't go past the bank boundary (256 bytes)
         if (chunkSize > 256 - address) chunkSize = 256 - address;
-        
+
         // write the chunk of data as specified
 //        MPUprogBuffer = (uint8_t *)data + i;
 
@@ -3020,7 +3020,7 @@ bool_t MPUwriteMemoryBlock(const uint8_t *data, uint16_t dataSize, uint8_t bank,
                 return FALSE; // uh oh.
             }
         }
-			
+
         // increase byte index by [chunkSize]
         i += chunkSize;
 
@@ -3069,7 +3069,7 @@ bool_t MPUwriteDMPConfigurationSet(const uint8_t *data, uint16_t dataSize, bool_
             Serial.println(" found...");*/
             if (special == 0x01) {
                 // enable DMP-related interrupts
-                
+
                 //setIntZeroMotionEnabled(TRUE);
                 //setIntFIFOBufferOverflowEnabled(TRUE);
                 //setIntDMPEnabled(TRUE);
@@ -3081,7 +3081,7 @@ bool_t MPUwriteDMPConfigurationSet(const uint8_t *data, uint16_t dataSize, bool_
                 success = FALSE;
             }
         }
-        
+
         if (!success) {
             return FALSE; // uh oh
         }

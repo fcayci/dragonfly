@@ -19,8 +19,8 @@
 
 /* ChibiOS I2Cdev Main I2C device class conversion 2/5/2013 by Jan Schlemminger - C conversion, ChibiOS compliance
  * First release. I just tested byte-based reading so this should be considered HIGHLY EXPERIMENTAL!!!
- * 
- * 
+ *
+ *
  * Feel free to test and report bugs. Updates at https://github.com/jevermeister/MPU6050-ChibiOS
 */
 
@@ -50,6 +50,12 @@ THE SOFTWARE.
 
 #ifndef _I2CDEV_CHIBI_H_
 #define _I2CDEV_CHIBI_H_
+
+#ifdef DEBUG_ENABLE
+  #define DEBUG_PRINT(x) chprintf((BaseSequentialStream *)&SD3, x);
+#else
+  #define DEBUG_PRINT(x) do {} while (0)
+#endif
 
 /* currently only one I2C bus is possible */
 #define I2C_MPU 			I2CD1

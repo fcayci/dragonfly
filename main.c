@@ -26,10 +26,10 @@
 #include "mpu6050.h"
 //#include "MPU6050_6Axis_MotionApps20.h"
 
-//#define DEBUG_ENABLE
+#define DEBUG_ENABLE
 
 #ifdef DEBUG_ENABLE
-  #define DEBUG_PRINT(x) chprintf((BaseSequentialStream *)&SD1, x);
+  #define DEBUG_PRINT(x) chprintf((BaseSequentialStream *)&SD3, x);
 #else
   #define DEBUG_PRINT(x) do {} while (0)
 #endif
@@ -185,7 +185,7 @@ static void updatePI(void);
 static void updatePID(void);
 
 /* XBee configuration */
-static SerialConfig sd1cfg = {
+static SerialConfig sd3cfg = {
 	115200,
 	USART_CR1_9BIT_WORD | USART_CR1_PARITY_SET | USART_CR1_EVEN_PARITY,
 	USART_CR2_STOP1_BITS | USART_CR2_LINEN,
@@ -222,13 +222,13 @@ static msg_t thPrinter(void *arg){
 	(void)arg;
 	chRegSetThreadName("printer");
 	while (TRUE){
-		//chprintf((BaseSequentialStream *)&SD1, "%f,%f,%f,%f\n\r", XaccelAngle,YaccelAngle,XcompAngle,YcompAngle);
-		//chprintf((BaseSequentialStream *)&SD1, "%f,%f,%f,%f,%d,%d\n\r", XaccelAngle,YaccelAngle,XcompAngle,YcompAngle,outputX,outputY);
-		chprintf((BaseSequentialStream *)&SD1, "%f,%f,%d\n\r", XaccelAngle,XcompAngle,outputX); // X axis
-		//chprintf((BaseSequentialStream *)&SD1, "%f,%f,%d\n\r", YaccelAngle,YcompAngle,outputY); // Y axis
-		//chprintf((BaseSequentialStream *)&SD1, "AX: %6d AY: %6d AZ: %6d ,GX: %6d GY: %6d GZ: %6d\t\r\n", ai16.x, ai16.y, ai16.z, gi16.x, gi16.y, gi16.z);
-		//chprintf((BaseSequentialStream *)&SD1, "EX: %f\t EY: %f\t OY: %f\t OY: %f\r\n",XcompAngle,errorY,outputX,outputY);
-		chThdSleepMilliseconds(50);
+		//chprintf((BaseSequentialStream *)&SD3, "%f,%f,%f,%f\n\r", XaccelAngle,YaccelAngle,XcompAngle,YcompAngle);
+		//chprintf((BaseSequentialStream *)&SD3, "%f,%f,%f,%f,%d,%d\n\r", XaccelAngle,YaccelAngle,XcompAngle,YcompAngle,outputX,outputY);
+		chprintf((BaseSequentialStream *)&SD3, "%f,%f,%d\n\r", XaccelAngle,XcompAngle,outputX); // X axis
+		//chprintf((BaseSequentialStream *)&SD3, "%f,%f,%d\n\r", YaccelAngle,YcompAngle,outputY); // Y axis
+		//chprintf((BaseSequentialStream *)&SD3, "AX: %6d AY: %6d AZ: %6d ,GX: %6d GY: %6d GZ: %6d\t\r\n", ai16.x, ai16.y, ai16.z, gi16.x, gi16.y, gi16.z);
+		//chprintf((BaseSequentialStream *)&SD3, "EX: %f\t EY: %f\t OY: %f\t OY: %f\r\n",XcompAngle,errorY,outputX,outputY);
+		chThdSleepMilliseconds(5000);
 	}
 	return 0;
 }
@@ -249,9 +249,9 @@ int main(void) {
 	/*
 	 * Initialize modules
 	 */
+    chThdSleepMilliseconds(3000); /* Wait 3 secs for radio link */
 	radioInit(); /* Initialize the radio link */
 	//motorsInit(); /* Initialize the motor pins */
-	chThdSleepMilliseconds(3000); /* Wait 3 secs for radio link */
 
 	isi2c = imuInit();	/* Initialize the imu unit */
 
@@ -286,9 +286,9 @@ int main(void) {
 }
 
 static void radioInit(void){
-	palSetPadMode(GPIOA, 9, PAL_MODE_ALTERNATE(7));
-	palSetPadMode(GPIOA, 10, PAL_MODE_ALTERNATE(7));
-	sdStart(&SD1, &sd1cfg);
+	palSetPadMode(GPIOC, 10, PAL_MODE_ALTERNATE(7));
+	palSetPadMode(GPIOC, 11, PAL_MODE_ALTERNATE(7));
+	sdStart(&SD3, &sd3cfg);
 }
 
 static bool_t imuInit(void){
@@ -303,35 +303,58 @@ static bool_t imuInit(void){
 	//MPU6050(MPU6050_ADDRESS_AD0_LOW);
 
 	/* Test connection */
-	MPUtestConnection()? chprintf((BaseSequentialStream *)&SD1, "IMU: MPU6050 [PASSED]\r\n"):
-			chprintf((BaseSequentialStream *)&SD1, "IMU: MPU6050 [ERROR]\r\n");
+    int isConnected = MPUtestConnection();
+	if (isConnected) {
+        DEBUG_PRINT("IMU: MPU6050 is connected\r\n");
 
-	DEBUG_PRINT("IMU: Reseting IMU...\r\n");
-	MPUreset();
+    	DEBUG_PRINT("IMU: Reseting IMU...\r\n");
+    	MPUreset();
+        chThdSleepMilliseconds(100);
+        MPUresetAccelerometerPath();
+        chThdSleepMilliseconds(100);
+        MPUresetGyroscopePath() ;
+        chThdSleepMilliseconds(100);
+        // DEBUG_PRINT("IMU: Reseting Sensors...\r\n");
+    	// MPUresetSensors();
+    	// chThdSleepMilliseconds(100);
 
-	DEBUG_PRINT("IMU: Reseting Sensors...\r\n");
-	MPUresetSensors();
-	chThdSleepMilliseconds(100);
+    	DEBUG_PRINT("IMU: Initializing...\r\n");
+    	MPUinitialize();
+    	chThdSleepMilliseconds(100);
 
-	DEBUG_PRINT("IMU: Initializing...\r\n");
-	MPUinitialize();
-	chThdSleepMilliseconds(100);
+        int flag;
+        flag = MPUgetSleepEnabled();
+        chprintf((BaseSequentialStream *)&SD3, "IMU: SLEEP: %d\r\n", flag);
+        flag = MPUgetWakeCycleEnabled();
+        chprintf((BaseSequentialStream *)&SD3, "IMU: WAKE: %d\r\n", flag);
+        flag = MPUgetTempSensorEnabled();
+        chprintf((BaseSequentialStream *)&SD3, "IMU: TEMP: %d\r\n", flag);
 
-	DEBUG_PRINT("IMU: Calibrating...\r\n");
+    	// DEBUG_PRINT("IMU: Calibrating...\r\n");
 
-	MPUgetMotion6(&ai16.x, &ai16.y, &ai16.z, &gi16.x, &gi16.y, &gi16.z);
+    	MPUgetMotion6(&ai16.x, &ai16.y, &ai16.z, &gi16.x, &gi16.y, &gi16.z);
 
-	XaccelAngle = (atan2(ai16.y,ai16.z))*RAD_TO_DEG;
-	YaccelAngle = (atan2(ai16.x,ai16.z))*RAD_TO_DEG;
+        chprintf((BaseSequentialStream *)&SD3, "%d,%d,%d\n\r", ai16.y, ai16.x, gi16.x);
 
-	XgyroRate = XaccelAngle;
-	YgyroRate = YaccelAngle;
-	XcompAngle = XaccelAngle;
-	YcompAngle = YaccelAngle;
+        chprintf((BaseSequentialStream *)&SD3, ": %d\r\n", MPUgetAccelerationX());
+        chprintf((BaseSequentialStream *)&SD3, ": %d\r\n", MPUgetTemperature());
 
-	DEBUG_PRINT("IMU: Calibrating Complete...\r\n");
-	DEBUG_PRINT("IMU: Creating Printer thread...\r\n");
-	chThdCreateStatic(waprint, sizeof(waprint), NORMALPRIO, thPrinter, NULL);
+        //
+    	// XaccelAngle = (atan2(ai16.y,ai16.z))*RAD_TO_DEG;
+    	// YaccelAngle = (atan2(ai16.x,ai16.z))*RAD_TO_DEG;
+        //
+    	// XgyroRate = XaccelAngle;
+    	// YgyroRate = YaccelAngle;
+    	// XcompAngle = XaccelAngle;
+    	// YcompAngle = YaccelAngle;
+
+    	// DEBUG_PRINT("IMU: Calibrating Complete...\r\n");
+    	DEBUG_PRINT("IMU: Creating Printer thread...\r\n");
+    	chThdCreateStatic(waprint, sizeof(waprint), NORMALPRIO, thPrinter, NULL);
+    }
+    else {
+        DEBUG_PRINT("IMU: MPU6050 is NOT connected\r\n");
+    }
 
 	return TRUE;
 }
@@ -341,8 +364,8 @@ static void imuGetData(void){
 	MPUgetMotion6(&ai16.x, &ai16.y, &ai16.z, &gi16.x, &gi16.y, &gi16.z);
 
 	/*
-	 *  Get the atan of X and Y. This value will be between -¹ to ¹ in radians.
-	 *  Optionally ¹ can be added to make it between 0 to 2¹. (M_PI).
+	 *  Get the atan of X and Y. This value will be between -pi to pi in radians.
+	 *  Optionally pi can be added to make it between 0 to 2pi. (M_PI).
 	 *  Finally convert it to degrees.
 	 */
 	XaccelAngle = (atan2(ai16.y,ai16.z))*RAD_TO_DEG;
